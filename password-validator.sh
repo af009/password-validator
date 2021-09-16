@@ -4,9 +4,9 @@
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 
-password=${1}
-password_length=${#password}
-
+#Reading Parameters from the user
+param1=${1}
+param2=${2:-EmptyPath}
 
 #We check if the password contains lower/upper letters and digits
 function checkPass {
@@ -34,9 +34,19 @@ function checkPass {
 
 }
 
-#We check the password length, if matches the minimum requirements we run the checkpass function
 function main {
 
+	# if we get -f, we read the file if not we check the password 
+	if [[ $param1 = "-f" ]];
+	then
+		password=$( cat  ${param2} )
+	else
+		password=$param1
+	fi
+
+	password_length=${#password}
+		
+	#We check the password length, if matches the minimum requirements we run the checkpass funtion
 	if [[ $password_length -lt 10 ]]
 	then
 		echo "${RED} The password must contain at least 10 characters"
@@ -47,7 +57,8 @@ function main {
 
 }
 
+
 main
 
-# print return from the checkPass/main function
+# print return from the checkPass function
 echo $?
