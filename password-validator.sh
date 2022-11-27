@@ -1,64 +1,72 @@
 #!/bin/bash
 
 #Colors Declaration
-RED=`tput setaf 1`
-GREEN=`tput setaf 2`
-
+# shellcheck disable=SC2006
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+BLUE=$(tput setaf 4)
+BOLD=$(tput bold)
 #Reading Parameters from the user
 param1=${1}
 param2=${2:-EmptyPath}
+counter=5
+passCounter=1
 
-#We check if the password contains lower/upper letters and digits
-function checkPass {
+function checkPassword {
 
-	if [[ $password == *[[:upper:]]* ]];
-	then
-		if [[ $password == *[[:digit:]]* ]];
-		then
-			if [[ $password == *[[:lower:]]* ]];
-			then
-				echo "${GREEN} Password Test Passed, Congrats!"
-				return 0
-			else
-				echo "${RED} The password must contain at least 1 lower letter"
-				return 1
-			fi
-		else
-			echo "${RED} The Password must contain at least 1 digit"
-			return 1
-		fi
-	else
-		echo "${RED} The password must contain at least 1 Upper letter"
-		return 1
-	fi
+  if [ ${#password} -lt 10 ]; then
+    echo "${RED}[] Password is too short. It should be at least 10 characters long." >>error.log
+    counter=$((counter - 1))
+  fi
 
-}
+  if [[ $password != *[[:upper:]]* ]]; then
+    echo "${RED}[] Password must contain at least one uppercase letter" >>error.log
+    counter=$((counter - 1))
+  fi
+  if [[ $password != *[[:lower:]]* ]]; then
+    echo "${RED}[] Password must contain at least one lowercase letter" >>error.log
+    counter=$((counter - 1))
+  fi
+  if [[ $password != *[[:digit:]]* ]]; then
+    echo "${RED}[] Password must contain at least one digit" >>error.log
+    counter=$((counter - 1))
+  fi
+  if [[ $password != *['!'@#\$%^\&*()_+]* ]]; then
+    echo "${RED}[] Password must contain at least one special character" >>error.log
+    counter=$((counter - 1))
+  fi
 
-function main {
+  if [ $counter -lt 5 ]; then
+    echo "${RED}Password is not strong enough. Please check the following:"
+    cat ./error.log && rm -rf ./error.log
+  else
+    echo "${GREEN}Password is strong enough."
+  fi
 
-	# if we get -f, we read the file if not we check the password 
-	if [[ $param1 = "-f" ]];
-	then
-		password=$( cat  ${param2} )
-	else
-		password=$param1
-	fi
-
-	password_length=${#password}
-		
-	#We check the password length, if matches the minimum requirements we run the checkpass funtion
-	if [[ $password_length -lt 10 ]]
-	then
-		echo "${RED} The password must contain at least 10 characters"
-		return 1
-	else
-		checkPass
-	fi
+# Calibrating the counter
+  counter=5
 
 }
 
+if [ "$param1" == "-f" ]; then
+  if [ "$param2" == "EmptyPath" ]; then
+    echo "${RED}Please enter the path to the file"
+    exit 1
+  fi
+  if [ ! -f "$param2" ]; then
+    echo "${RED}File does not exist"
+    exit 1
+  fi
+  while read -r password; do
+    [ -z "$password" ] && continue
 
-main
+    echo "${BOLD}${BLUE}Password Number $passCounter:"
+    checkPassword
+    passCounter=$((passCounter + 1))
+    echo " "
 
-# print return from the checkPass function
-echo $?
+  done <"$param2"
+else
+  password=$param1
+  checkPassword
+fi
